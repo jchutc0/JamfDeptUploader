@@ -6,18 +6,18 @@ To start it, you just need to send the script name and a filename. The file shou
 Starting it with no filenames shows more detailed info: 
 
 Usage
-    jamfDeptUploader.sh [-v] [-s <server name>] [-u <client id>] [-p <client secret>] <file name>
+    `jamfDeptUploader.sh [-v] [-s <server name>] [-u <client id>] [-p <client secret>] <file name>`
 
 Uploads a list of departments to a Jamf Pro server through its API.
 
 Uses API keys which can be set up through the Jamf Pro server (curently under Settings -> System -> API Roles and Clients). The role assigned to the API client ID must have access to create and read Departments or else the Jamf Pro server will return an error. If the server name and/or credentials are not specified, the script will prompt for them.
 
 Options
-    -s <server name>
+    `-s <server name>`
         Specify the server name (URL) of the Jamf Pro server
-    -u <client id>
+    `-u <client id>`
         Specify the client ID for the Jamf Pro server API
-    -p <client secret>
+    `-p <client secret>`
         Specify the client secret for the Jamf Pro server API
-    -v
+    `-v`
         Sets verbose (debug) mode
