@@ -168,6 +168,18 @@ getDeptList() {
 # Upload a department through the API
 apiUpload() {
 	debug "Uploading Department $1"
+	local postUrl="${servername}/JSSResource/departments/id/0"
+	xml="<department><name>$1</name></department>"
+	debug " using URL $postUrl"
+	if ! webdata=$(curl -s --request POST "$postUrl" \
+		-H "Authorization: Bearer $token" \
+		-H "Content-Type: application/xml" \
+		-d "$xml"); then
+		debug "Connection error. Exiting."
+		echo "Detail: ${webdata}"
+		exitWithError "Unable to get department data. See detail above."
+	fi
+	debug "Data sent successfully"
 }
 
 ## processDeptList
