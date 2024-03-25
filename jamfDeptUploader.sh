@@ -36,11 +36,11 @@ exitWithError() {
 # prints the program usage
 usage() {
 	echo "Usage"
-	echo "    ${scriptname} [-v] [-s <server name>] [-u <client id>] [-p <client secret>] <file name>..."
+	echo "    ${scriptname} [-v] [-s <server name>] [-u <client id>] [-p <client secret>] <file name>"
 	echo ""
-	echo "Uploads one or more files to a Jamf Pro server through its API. Supports multiple files and wildcards."
+	echo "Uploads a list of departments to a Jamf Pro server through its API."
 	echo ""
-	echo "Uses API keys which can be set up through the Jamf Pro server (curently under Settings -> System -> API Roles and Clients). The role assigned to the API client ID must have access to to the proper operation or else the Jamf Pro server will send an error. If the server name and/or credentials are not specified, the script will prompt for them."
+	echo "Uses API keys which can be set up through the Jamf Pro server (curently under Settings -> System -> API Roles and Clients). The role assigned to the API client ID must have access to create and read Departments or else the Jamf Pro server will return an error. If the server name and/or credentials are not specified, the script will prompt for them."
 	echo ""
 	echo "Options"
 	echo "    -s <server name>"
