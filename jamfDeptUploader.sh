@@ -8,6 +8,7 @@ declare client_secret
 declare servername
 declare token
 declare -a userDepts
+declare jamfDepts
 
 ## debug
 #### #### #### #### #### #### #### #### #### #### 
@@ -138,6 +139,60 @@ requestToken() {
 	debug "Bearer Token: $token"
 }
 
+## getDeptList
+#### #### #### #### #### #### #### #### #### #### 
+# Download current list of departments through API
+getDeptList() {
+	local deptUrl="${servername}/JSSResource/departments"
+	local webdata
+	requestToken
+	debug "  using URL $deptUrl"
+	if ! webdata=$(curl -s --request GET "$deptUrl" \
+		-H "Authorization: Bearer $token" \
+		-H 'accept: application/json'); then
+		debug "Connection error. Exiting."
+		echo "Detail: ${webdata}"
+		exitWithError "Unable to get department data. See detail above."
+	fi
+	if ! jamfDepts=$(printf "%s" "${webdata}" | /usr/bin/plutil -extract "departments" json -o - -); then
+		debug "Department data error. Exiting."
+		echo "Server response: ${webdata}"
+		exitWithError "Unable to extract department data"
+	fi
+	debug "Jamf Departmnet List:"
+	debug "$jamfDepts"
+}
+
+## apiUpload
+#### #### #### #### #### #### #### #### #### #### 
+# Upload a department through the API
+apiUpload() {
+	debug "Uploading Department $1"
+}
+
+## processDeptList
+#### #### #### #### #### #### #### #### #### #### 
+# Process list of departments
+processDeptList() {
+	local uploadCount=0
+	
+	for i in "${userDepts[@]}"; do
+		debug " Examining item $i"
+		## TODO: Add quotation marks at the beginning and end of the string
+		local escapedDept=$(printf "%s" "$i" | sed 's/\"/\\\\\"/g')
+		escapedDept="\"$escapedDept\""
+		debug "  escaped: $escapedDept"
+		if echo "$jamfDepts" | grep "$escapedDept" &>/dev/null; then
+			debug "  Department exists"
+		else
+			debug "  Department does not exist"
+			apiUpload "$i"
+			uploadCount=$((uploadCount+1))
+		fi
+	done
+	echo "Updated $uploadCount item(s)"
+}
+
 
 ## main
 #### #### #### #### #### #### #### #### #### #### 
@@ -183,13 +238,10 @@ done
 debug "Processing department file"
 processFile "$1"
 
+debug "Getting Jamf departments list"
+getDeptList
 
-debug "Fetching an API token"
-# requestToken
+debug "Processessing department list"
+processDeptList
 
-# TODO: Download current list of departments through API
-# TODO: For each new department
-# TODO: If department not in list
-# TODO: Upload encoded department through API
-
-debug "Hello, there!"
+debug "Exiting."
