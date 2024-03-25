@@ -7,6 +7,7 @@ declare client_id
 declare client_secret
 declare servername
 declare token
+declare -a userDepts
 
 ## debug
 #### #### #### #### #### #### #### #### #### #### 
@@ -22,7 +23,7 @@ debug() {
 ## usage
 #### #### #### #### #### #### #### #### #### #### 
 # Exits the program with an error message
-exit_with_error() {
+exitWithError() {
 	local error_message="$1"
 	debug "[ERROR] ${error_message}"
 	echo "${error_message}" 1>&2
@@ -57,7 +58,7 @@ usage() {
 usageError() {
 	usage 
 	echo ""
-	exit_with_error "ERROR: $1"
+	exitWithError "ERROR: $1"
 }
 
 ## checkToken
@@ -73,6 +74,39 @@ checkToken() {
 	return 1
 }
 
+## processFile
+#### #### #### #### #### #### #### #### #### #### 
+# processes file of departments
+processFile() {
+	debug "  Checking readability of file"
+	if [ ! -r "$1" ]; then
+		exitWithError "Cannot read from file $1"
+	fi
+
+	debug "---"
+	debug "Starting departments file:"
+	if [ -n "${debug_mode+x}" ]; then cat "$1"; fi
+	debug "---"
+	
+
+	debug "Processed departments file:"
+	# https://stackoverflow.com/questions/11393817/read-lines-from-a-file-into-a-bash-array
+	# https://stackoverflow.com/questions/3432555/remove-blank-lines-with-grep
+	IFS=$'\r\n' \
+	GLOBIGNORE='*' \
+	command eval 'userDepts=($(sort "$1" | uniq | grep -vi "null"))'
+	for i in "${userDepts[@]}"; do
+		debug "$i"		
+	done
+	debug "---"
+	
+	debug "Evaluating array length for ${#userDepts[@]}"
+	if [ ${#userDepts[@]} -eq 0 ]; then
+		exitWithError "No valid items in departments file!"
+	fi
+
+}
+
 ## requestToken
 #### #### #### #### #### #### #### #### #### #### 
 # requests an API token from the Jamf server
@@ -80,28 +114,29 @@ requestToken() {
 	local webdata
 	if checkToken; then return; fi
 	debug "Getting new token"
-	if ! webdata=$(curl -s --request POST "${servername}/api/oauth/token" \
+	local tokenUrl="${servername}/api/oauth/token"
+	debug "  Using URL $tokenUrl"
+	if ! webdata=$(curl -s --request POST "$tokenUrl" \
         --header "Content-Type: application/x-www-form-urlencoded" \
         --data-urlencode "grant_type=client_credentials" \
         --data-urlencode "client_id=${client_id}" \
         --data-urlencode "client_secret=${client_secret}"); then
 		debug "Connection error. Exiting."
 		echo "Detail: ${webdata}"
-		exit_with_error "Unable to connect to server. See detail above."
+		exitWithError "Unable to connect to server. See detail above."
     fi
 	if ! token=$(printf "%s" "${webdata}" | /usr/bin/plutil -extract "access_token" raw -o - -); then
 		debug "Token data error. Exiting."
 		echo "Server response: ${webdata}"
-		exit_with_error "Unable to extract token data"
+		exitWithError "Unable to extract token data"
 	fi
 	if ! checkToken; then 
 		debug "Token validation error. Exiting."
 		echo "Server response: ${webdata}"
-		exit_with_error "Unable to get token data"
+		exitWithError "Unable to get token data"
 	fi
 	debug "Bearer Token: $token"
 }
-
 
 
 ## main
@@ -145,10 +180,13 @@ while [ -z "${client_secret}" ]; do
 	echo ""
 done
 
-# TODO: Check readability of file
-# TODO: Process file - translate to URL encode, sort, unique. exclude null department
-# TODO: Get an API token
-requestToken
+debug "Processing department file"
+processFile "$1"
+
+
+debug "Fetching an API token"
+# requestToken
+
 # TODO: Download current list of departments through API
 # TODO: For each new department
 # TODO: If department not in list
